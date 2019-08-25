@@ -1,8 +1,10 @@
 import * as Yup from 'yup';
-import { startOfHour, parseISO, isBefore } from 'date-fns';
+import { startOfHour, parseISO, isBefore, format } from 'date-fns';
+import ptBR from 'date-fns/locale/pt-BR';
 import Appointment from '../models/Appointment';
 import User from '../models/User';
 import File from '../models/File';
+import Notification from '../schemas/Notifications';
 
 class AppointmentController {
   async index(req, res) {
@@ -80,13 +82,44 @@ class AppointmentController {
         .status(400)
         .json({ error: 'Appointment date isn´t avaiable!' });
     }
+    /**
+     * the user and provider cannot be the same person.
+     */
+    if (req.userId === provider_id) {
+      return res
+        .status(400)
+        .json({ error: 'The provider and user cannot be the same person.' });
+    }
     const appointment = await Appointment.create({
       user_id: req.userId,
       provider_id,
       date,
     });
 
+    /**
+     * Notify the appointment to provider
+     */
+    const user = await User.findByPk(req.userId);
+    const formattedDate = format(
+      hourStart,
+      "'dia' dd 'de' MMMM', às' H:mm'h'",
+      {
+        locale: ptBR,
+      }
+    );
+
+    await Notification.create({
+      content: `Novo agendamento de ${user.name} para o ${formattedDate}`,
+      user: provider_id,
+    });
     return res.json(appointment);
+  }
+
+  async delete(req, res) {
+    const { id } = req.params;
+    const appointment = await Appointment.destroy({ where: { id } });
+
+    return res.status(200).json(appointment);
   }
 }
 
