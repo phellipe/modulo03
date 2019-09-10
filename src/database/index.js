@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import Sequelize from 'sequelize';
 import mongoose from 'mongoose';
 import databaseConfig from '../config/database';
@@ -22,10 +23,11 @@ class Database {
 
   mongo() {
     this.mongoConnection = mongoose.connect(
-      'mongodb://localhost:27017/gobarber',
+      `mongodb://${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_NAME}`,
       {
         useNewUrlParser: true,
         useFindAndModify: true,
+        useUnifiedTopology: true,
       }
     );
   }
